@@ -1,150 +1,79 @@
 ﻿using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace AutomatedAPI.HTTPClient
 {
     public class JsonHttpClient : IJsonHttpClient
     {
-        private readonly IJsonConverter _jsonConverter;
-
-        public JsonHttpClient(IJsonConverter jsonConverter)
-        {
-            _jsonConverter = jsonConverter;
-        }
-
         public TResponse Get<TResponse>(Uri requestUri)
         {
-            TResponse responseJson;
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            HttpWebResponse httpResponse = (HttpWebResponse)http.GetResponse();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            TResponse response;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            response = http.GetFromJsonAsync<TResponse>(requestUri, options).Result;
+            
+            return response;
         }
         public async Task<TResponse> GetAsync<TResponse>(Uri requestUri)
         {
-            TResponse responseJson;
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            HttpWebResponse httpResponse = (HttpWebResponse)await http.GetResponseAsync();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            return await http.GetFromJsonAsync<TResponse>(requestUri, options);
         }
 
         public TResponse Post<TRequest, TResponse>(Uri requestUri, TRequest request)
         {
-            TResponse responseJson;
-            var jsonString = _jsonConverter.ToJsonString(request);
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            http.Method = "POST";
-
-            using (var streamWriter = new StreamWriter(http.GetRequestStream()))
-            {
-                streamWriter.Write(jsonString);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            HttpWebResponse httpResponse = (HttpWebResponse)http.GetResponse();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var webResult = http.PostAsJsonAsync<TRequest>(requestUri, request, options).Result;
+            var contentResult = webResult.Content.ReadAsStringAsync().Result;
+            return JsonSerializer.Deserialize<TResponse>(contentResult);            
         }
 
         public async Task<TResponse> PostAsync<TRequest, TResponse>(Uri requestUri, TRequest request)
         {
-            TResponse responseJson;
-            var jsonString = _jsonConverter.ToJsonString(request);
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            http.Method = "POST";
-
-            using (var streamWriter = new StreamWriter(http.GetRequestStream()))
-            {
-                streamWriter.Write(jsonString);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            HttpWebResponse httpResponse = (HttpWebResponse)await http.GetResponseAsync();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var webResult = await http.PostAsJsonAsync<TRequest>(requestUri, request, options);
+            var contentResult = await webResult.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<TResponse>(contentResult);
         }
 
         public TResponse Put<TRequest, TResponse>(Uri requestUri, TRequest request)
         {
-            TResponse responseJson;
-            var jsonString = _jsonConverter.ToJsonString(request);
-            HttpWebRequest http = (HttpWebRequest)WebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            http.Method = "PUT";
-
-            using (var streamWriter = new StreamWriter(http.GetRequestStream()))
-            {
-                streamWriter.Write(jsonString);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            HttpWebResponse httpResponse = (HttpWebResponse)http.GetResponse();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var webResult = http.PutAsJsonAsync<TRequest>(requestUri, request, options).Result;
+            var contentResult = webResult.Content.ReadAsStringAsync().Result;
+            return JsonSerializer.Deserialize<TResponse>(contentResult);
         }
 
         public async Task<TResponse> PutAsync<TRequest, TResponse>(Uri requestUri, TRequest request)
         {
-            TResponse responseJson;
-            var jsonString = _jsonConverter.ToJsonString(request);
-            HttpWebRequest http = (HttpWebRequest)WebRequest.Create(requestUri);
-            http.ContentType = "application/json;";
-            http.Method = "PUT";
 
-            using (var streamWriter = new StreamWriter(http.GetRequestStream()))
-            {
-                streamWriter.Write(jsonString);
-                streamWriter.Flush();
-                streamWriter.Close();
-            }
-
-            HttpWebResponse httpResponse = (HttpWebResponse)await http.GetResponseAsync();
-            using (StreamReader sr = new StreamReader(httpResponse.GetResponseStream()))
-            {
-                responseJson = _jsonConverter.ToObject<TResponse>(sr.ReadToEnd());
-            }
-            return responseJson;
+            HttpClient http = new();
+            var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+            var webResult = await http.PutAsJsonAsync<TRequest>(requestUri, request, options);
+            var contentResult = await webResult.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<TResponse>(contentResult);
         }
 
         public void Delete(Uri requestUri)
         {
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            http.Method = "DELETE";
-            _ = (HttpWebResponse)http.GetResponse();
+            HttpClient http = new();
+            _ = http.DeleteAsync(requestUri).Result;
+
 
         }
         public async Task DeleteAsync(Uri requestUri)
         {
-            HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(requestUri);
-            http.ContentType = "application/json; charset=UTF-8";
-            http.Method = "DELETE";
-            _ = (HttpWebResponse)await http.GetResponseAsync();
+            HttpClient http = new();
+            _ = await http.DeleteAsync(requestUri);
         }
     }
 }
